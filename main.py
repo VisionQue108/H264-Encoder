@@ -1,11 +1,13 @@
 import cv2
 import os
-from threading import Thread
+from threading import Thread,Lock
 from time import sleep
 
 from gi.repository import Gst, GLib
 import gi
 gi.require_version("Gst", "1.0")
+
+file_lock=Lock()
 
 vid=cv2.VideoCapture(0)
 
@@ -19,11 +21,13 @@ def frame_capture():
 
         try:          
             while (True):
-                flag, frame =vid.read() #Flag returns 1 for success, 0 for failure. Frame is the currently processed frame
+                flag, frame =vid.read() 
                 x = frame_width/2
-                y = frame_height/2 #change to the desired coordinates
-                text_color = (255,0,0) #color as (B,G,R)
-                result.write(frame) #write to the video file
+                y = frame_height/2 
+                text_color = (255,0,0) 
+                #Acquiring lock before writing
+                with file_lock:
+                        result.write(frame) #write to the video file
         except KeyboardInterrupt:
             Gst.init()
             gstreamer_loop =GLib.MainLoop()
@@ -42,6 +46,7 @@ def frame_capture():
             gstreamer_loop.quit()
             gstreamer_loop_thread.join()
             print("Conversion Successful!")
+        file_lock.release()
 frame_capture()
 
 
